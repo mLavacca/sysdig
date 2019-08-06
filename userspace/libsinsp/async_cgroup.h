@@ -87,14 +87,32 @@ struct delayed_cgroup_value {
 };
 
 /**
+ * \brief Behavior when container_id is missing from the cgroup path
+ *
+ * Usually the container ID is present in cgroup paths and the code that reads
+ * resource limits from cgroups checks that to avoid treating e.g. root
+ * cgroup settings as per-container values.
+ *
+ * In some cases we want to skip the check and read the limits even if
+ * the cgroup path does not contain the container ID
+ */
+enum class cgroup_check
+{
+	LOG, /**< log at INFO level and skip reading the values */
+	DEBUG_LOG, /**< log at DEBUG level and skip reading the values */
+	SKIP /**< skip the check (read the values regardless of the path) */
+};
+
+/**
  * \brief Read resource limits from cgroups
  * @param key the container to read limits for
  * @param value output value. when the return value is false, specific fields
  *         may or may not have been modified
- * @param report_no_cgroup if true, log a message when the container doesn't
- *         use its own cgroups for mem/cpu and we ignore the values.
- *         We want to log this only once since the cgroups will stay the same
- *         during subsequent lookups
+ * @param cgroup_check define the behavior when the cgroup path
+ *         does not contain the container id, i.e. when the container does not
+ *         use its own cgroups for mem/cpu. See `cgroup_check`.
+ *         For typical container engines (Docker, CRI) we want to log this only
+ *         once since the cgroups will stay the same during subsequent lookups
  * @return true when all values have been successfully read, false otherwise
  *
  * Note: reading a zero/negative/very large value is considered a failure,
@@ -103,7 +121,7 @@ struct delayed_cgroup_value {
  * in the future", while `true` means we really don't expect them to change
  * any more.
  */
-bool get_cgroup_resource_limits(const delayed_cgroup_key& key, delayed_cgroup_value& value, bool report_no_cgroup=true);
+bool get_cgroup_resource_limits(const delayed_cgroup_key& key, delayed_cgroup_value& value, cgroup_check check=cgroup_check::LOG);
 
 /**
  * \brief Asynchronous key-value source for delayed cgroup lookups

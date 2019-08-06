@@ -42,15 +42,24 @@ bool read_cgroup_val(std::shared_ptr<std::string>& subsys,
 namespace libsinsp {
 namespace async_cgroup {
 
-bool get_cgroup_resource_limits(const delayed_cgroup_key& key, delayed_cgroup_value& value, bool report_no_cgroup)
+bool get_cgroup_resource_limits(const delayed_cgroup_key& key, delayed_cgroup_value& value, cgroup_check check)
 {
 	bool found_all = true;
-	auto no_cg_log_level = report_no_cgroup
-		? sinsp_logger::SEV_INFO
-		: sinsp_logger::SEV_DEBUG;
+	sinsp_logger::severity no_cg_log_level;
+	switch(check)
+	{
+	case cgroup_check::LOG:
+		no_cg_log_level = sinsp_logger::SEV_INFO;
+		break;
+	case cgroup_check::DEBUG_LOG:
+		no_cg_log_level = sinsp_logger::SEV_DEBUG;
+		break;
+	default:
+		no_cg_log_level = sinsp_logger::SEV_MAX;
+	}
 
 	std::shared_ptr<std::string> memcg_root = sinsp::lookup_cgroup_dir("memory");
-	if(key.m_mem_cgroup.find(key.m_container_id) == std::string::npos)
+	if(check != cgroup_check::SKIP && key.m_mem_cgroup.find(key.m_container_id) == std::string::npos)
 	{
 		g_logger.format(no_cg_log_level, "(async-cg) mem cgroup for container [%s]: %s/%s -- no per-container memory cgroup, ignoring",
 			key.m_container_id.c_str(), memcg_root->c_str(), key.m_mem_cgroup.c_str());
@@ -63,7 +72,7 @@ bool get_cgroup_resource_limits(const delayed_cgroup_key& key, delayed_cgroup_va
 	}
 
 	std::shared_ptr<std::string> cpucg_root = sinsp::lookup_cgroup_dir("cpu");
-	if(key.m_cpu_cgroup.find(key.m_container_id) == std::string::npos)
+	if(check != cgroup_check::SKIP && key.m_cpu_cgroup.find(key.m_container_id) == std::string::npos)
 	{
 		g_logger.format(no_cg_log_level, "(async-cg) cpu cgroup for container [%s]: %s/%s -- no per-container CPU cgroup, ignoring",
 				key.m_container_id.c_str(), cpucg_root->c_str(), key.m_cpu_cgroup.c_str());
@@ -91,7 +100,7 @@ void delayed_cgroup_lookup::run_impl()
 	delayed_cgroup_key key;
 	while(dequeue_next_key(key)) {
 		delayed_cgroup_value value;
-		get_cgroup_resource_limits(key, value, false);
+		get_cgroup_resource_limits(key, value, cgroup_check::DEBUG_LOG);
 		store_value(key, value);
 	}
 }
