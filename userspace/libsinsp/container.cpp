@@ -74,7 +74,7 @@ bool sinsp_container_manager::remove_inactive_containers()
 			return true;
 		});
 
-		for(unordered_map<string, sinsp_container_info>::iterator it = m_containers.begin(); it != m_containers.end();)
+		for(auto it = m_containers.begin(); it != m_containers.end();)
 		{
 			if(containers_in_use.find(it->first) == containers_in_use.end())
 			{
@@ -313,10 +313,10 @@ void sinsp_container_manager::notify_new_container(const sinsp_container_info& c
 
 void sinsp_container_manager::dump_containers(scap_dumper_t* dumper)
 {
-	for(unordered_map<string, sinsp_container_info>::const_iterator it = m_containers.begin(); it != m_containers.end(); ++it)
+	for(const auto& it : m_containers)
 	{
 		sinsp_evt evt;
-		if(container_to_sinsp_event(container_to_json(it->second), &evt, it->second.get_tinfo(m_inspector)))
+		if(container_to_sinsp_event(container_to_json(it.second), &evt, it.second.get_tinfo(m_inspector)))
 		{
 			int32_t res = scap_dump(m_inspector->m_h, dumper, evt.m_pevt, evt.m_cpuid, 0);
 			if(res != SCAP_SUCCESS)
@@ -337,7 +337,7 @@ string sinsp_container_manager::get_container_name(sinsp_threadinfo* tinfo)
 	}
 	else
 	{
-		const sinsp_container_info *container_info = get_container(tinfo->m_container_id);
+		const auto container_info = get_container(tinfo->m_container_id);
 
 		if(!container_info)
 		{
@@ -362,7 +362,7 @@ void sinsp_container_manager::identify_category(sinsp_threadinfo *tinfo)
 		return;
 	}
 
-	sinsp_container_info *cinfo = get_container(tinfo->m_container_id);
+	auto cinfo = get_container(tinfo->m_container_id);
 
 	if(!cinfo)
 	{
