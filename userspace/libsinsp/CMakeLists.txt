@@ -33,6 +33,8 @@ if(NOT WIN32 AND NOT APPLE)
 	include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 endif()
 
+include_directories("${PROJECT_SOURCE_DIR}/../falco-plugin")
+
 if(NOT WIN32)
 	include_directories("${CURL_INCLUDE_DIR}")
 endif()
@@ -116,6 +118,11 @@ set(SINSP_SOURCES
 	user_event.cpp
 	value_parser.cpp
 	viewinfo.cpp
+	../../../falco-plugin/tracer_interface.cpp
+	../../../falco-plugin/tracer.cpp	
+	../../../falco-plugin/tracer_common.cpp
+	../../../falco-plugin/tracer_msg_creator.cpp
+	../../../falco-plugin/tsc.cpp
 )
 
 if(WIN32)
